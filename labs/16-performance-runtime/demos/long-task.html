@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Long Task vs scheduler.yield</title>
+<style>
+  body { font-family: system-ui; padding: 24px; max-width: 800px; margin: auto }
+  button { padding: 12px 20px; margin: 4px; font-size: 16px; cursor: pointer }
+  .ball {
+    width: 30px; height: 30px; border-radius: 50%; background: tomato;
+    animation: bounce 1s infinite linear;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateX(0) }
+    50% { transform: translateX(600px) }
+  }
+  pre { background: #f4f4f4; padding: 12px }
+</style>
+</head>
+<body>
+<h1>主线程阻塞演示</h1>
+<p>下面的红球做匀速运动。点击按钮跑 5 秒计算,观察小球是否卡顿。</p>
+
+<div class="ball"></div>
+
+<h3>三种实现</h3>
+<button id="bad">❌ 同步阻塞(球完全停)</button>
+<button id="settimeout">⚠️ setTimeout 切片(略好)</button>
+<button id="scheduler">✅ scheduler.yield (最佳)</button>
+<button id="worker">🚀 Web Worker(完全不阻塞 UI)</button>
+
+<pre id="log"></pre>
+
+<script type="module">
+const log = document.getElementById('log')
+function out(msg) { log.textContent += msg + '\n' }
+
+function heavyWork(iterations) {
+  let sum = 0
+  for (let i = 0; i < iterations; i++) sum += Math.sqrt(i)
+  return sum
+}
+
+// ============================================
+// 1. 同步阻塞 5 秒
+// ============================================
+document.getElementById('bad').onclick = () => {
+  out('--- 同步开始 ---')
+  const t0 = performance.now()
+  const result = heavyWork(2e8)
+  out(`同步: ${(performance.now() - t0).toFixed(0)}ms, result=${result.toFixed(0)}`)
+}
+
+// ============================================
+// 2. setTimeout 切片
+// ============================================
+document.getElementById('settimeout').onclick = async () => {
+  out('--- setTimeout 切片开始 ---')
+  const t0 = performance.now()
+  let sum = 0
+  for (let chunk = 0; chunk < 20; chunk++) {
+    sum += heavyWork(1e7)
+    await new Promise(r => setTimeout(r, 0))
+  }
+  out(`setTimeout: ${(performance.now() - t0).toFixed(0)}ms, result=${sum.toFixed(0)}`)
+}
+
+// ============================================
+// 3. scheduler.yield(2024+)
+// ============================================
+document.getElementById('scheduler').onclick = async () => {
+  out('--- scheduler.yield 开始 ---')
+  const t0 = performance.now()
+  let sum = 0
+  for (let chunk = 0; chunk < 20; chunk++) {
+    sum += heavyWork(1e7)
+    if (scheduler.yield) {
+      await scheduler.yield()
+    } else {
+      await new Promise(r => setTimeout(r, 0))
+    }
+  }
+  out(`scheduler.yield: ${(performance.now() - t0).toFixed(0)}ms, result=${sum.toFixed(0)}`)
+}
+
+// ============================================
+// 4. Web Worker(零阻塞)
+// ============================================
+document.getElementById('worker').onclick = () => {
+  out('--- Web Worker 开始 ---')
+  const t0 = performance.now()
+  const workerCode = `
+    self.onmessage = (e) => {
+      let sum = 0
+      for (let i = 0; i < e.data; i++) sum += Math.sqrt(i)
+      self.postMessage(sum)
+    }
+  `
+  const blob = new Blob([workerCode], { type: 'application/javascript' })
+  const worker = new Worker(URL.createObjectURL(blob))
+  worker.postMessage(2e8)
+  worker.onmessage = (e) => {
+    out(`Worker: ${(performance.now() - t0).toFixed(0)}ms, result=${e.data.toFixed(0)}`)
+    worker.terminate()
+  }
+}
+</script>
+
+<h3>观察要点</h3>
+<ul>
+  <li><strong>同步</strong>:小球完全冻结 5 秒</li>
+  <li><strong>setTimeout</strong>:小球能动,但 setTimeout 最小 4ms,慢且不智能</li>
+  <li><strong>scheduler.yield</strong>:小球流畅,浏览器智能调度</li>
+  <li><strong>Web Worker</strong>:小球完全不受影响,但需序列化数据</li>
+</ul>
+
+<h3>打开 Performance 面板观察</h3>
+<ol>
+  <li>DevTools → Performance → Record</li>
+  <li>点 ❌ 按钮 → 看到一条 5 秒的「Task」红条</li>
+  <li>点 ✅ 按钮 → 看到 20 条小 task,中间有渲染帧</li>
+</ol>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>语义 HTML vs Div 汤</title>
+  <style>
+    body { font: 14px/1.6 system-ui; padding: 24px; max-width: 700px; }
+    .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .panel { border: 1px solid #ddd; padding: 16px; border-radius: 6px; }
+    .bad { border-color: #fcc; }
+    .good { border-color: #cfc; }
+    h2 { margin-top: 0; }
+    nav ul { list-style: none; padding: 0; display: flex; gap: 12px; }
+  </style>
+</head>
+<body>
+  <h1>同一个页面,两种写法</h1>
+  <p>用屏幕阅读器(Mac: VoiceOver, Cmd+F5)对比朗读体验。或在 DevTools Accessibility 树里看结构差异。</p>
+
+  <div class="comparison">
+    <div class="panel bad">
+      <h2>❌ Div 汤</h2>
+      <div class="header">
+        <div class="logo">My Site</div>
+        <div class="nav">
+          <div onclick="alert('home')">Home</div>
+          <div onclick="alert('about')">About</div>
+          <div onclick="alert('contact')">Contact</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="title">文章标题</div>
+        <div class="paragraph">这是一段文字。</div>
+        <div class="button" onclick="alert('clicked')">提交</div>
+      </div>
+    </div>
+
+    <div class="panel good">
+      <h2>✅ 语义 HTML</h2>
+      <header>
+        <strong>My Site</strong>
+        <nav aria-label="主导航">
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+            <li><a href="/contact">Contact</a></li>
+          </ul>
+        </nav>
+      </header>
+      <main>
+        <article>
+          <h2>文章标题</h2>
+          <p>这是一段文字。</p>
+          <button type="button" onclick="alert('clicked')">提交</button>
+        </article>
+      </main>
+    </div>
+  </div>
+
+  <h2>两边的差异</h2>
+  <table border="1" cellpadding="8" style="border-collapse: collapse; margin-top: 16px;">
+    <tr><th>能力</th><th>Div 汤</th><th>语义</th></tr>
+    <tr><td>键盘 Tab 能 focus 链接</td><td>❌</td><td>✅</td></tr>
+    <tr><td>Enter / Space 触发按钮</td><td>❌(需手写 keydown)</td><td>✅ 原生</td></tr>
+    <tr><td>屏幕阅读器朗读「导航区域」</td><td>❌</td><td>✅</td></tr>
+    <tr><td>NVDA 按 H 跳标题</td><td>❌</td><td>✅</td></tr>
+    <tr><td>右键「在新标签打开」</td><td>❌ div 没用</td><td>✅ a 标签可以</td></tr>
+    <tr><td>SEO 爬虫识别结构</td><td>差</td><td>好</td></tr>
+    <tr><td>「禁用」状态</td><td>需手写 aria + 拦截 click</td><td>`disabled` 一个属性搞定</td></tr>
+  </table>
+</body>
+</html>

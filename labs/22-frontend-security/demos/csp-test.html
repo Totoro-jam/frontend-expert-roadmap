@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>CSP 测试</title>
+  <!-- 把 CSP 写 meta(只支持部分指令,正式用 HTTP 头) -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="
+      default-src 'self';
+      script-src 'self' 'nonce-DEMO_NONCE' 'strict-dynamic';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' https: data:;
+      connect-src 'self' https://httpbin.org;
+      object-src 'none';
+      frame-ancestors 'none';
+      base-uri 'self';
+      form-action 'self';
+    "
+  />
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 2em auto; line-height: 1.6; }
+    h2 { margin-top: 2em; border-bottom: 2px solid #333; }
+    .pass { color: #16a34a; font-weight: bold; }
+    .fail { color: #dc2626; font-weight: bold; }
+    .info { color: #ca8a04; }
+    pre { background: #f4f4f5; padding: 1em; border-radius: 4px; overflow-x: auto; }
+    button { padding: 0.5em 1em; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>CSP 测试页</h1>
+  <p>这页 CSP:</p>
+  <pre>script-src 'self' 'nonce-DEMO_NONCE' 'strict-dynamic'
+style-src 'self' 'unsafe-inline'
+img-src 'self' https: data:
+connect-src 'self' https://httpbin.org
+object-src 'none'
+frame-ancestors 'none'</pre>
+
+  <p>预期:带 nonce 的 inline script ✅ 跑;不带 nonce 的 ❌ 被拒;跨域 fetch 看 connect-src。</p>
+
+  <div id="output"></div>
+
+  <h2>1. Inline script(无 nonce) → 应该被拦截</h2>
+  <script>
+    document.getElementById('output').insertAdjacentHTML('beforeend',
+      '<p class="fail">如果你看到这行,CSP 没生效!(因为 no-nonce script 执行了)</p>')
+  </script>
+
+  <h2>2. Inline script(有 nonce) → 应该执行</h2>
+  <script nonce="DEMO_NONCE">
+    const out = document.getElementById('output')
+    const p = document.createElement('p')
+    p.className = 'pass'
+    p.textContent = '✅ 有 nonce 的 script 执行了'
+    out.appendChild(p)
+  </script>
+
+  <h2>3. eval → 默认应该被拦截(没 unsafe-eval)</h2>
+  <button id="btn-eval">点击试 eval</button>
+  <script nonce="DEMO_NONCE">
+    document.getElementById('btn-eval').addEventListener('click', () => {
+      const out = document.getElementById('output')
+      const p = document.createElement('p')
+      try {
+        // eslint-disable-next-line no-eval
+        eval('1 + 1')
+        p.className = 'fail'
+        p.textContent = '❌ eval 居然执行了 → CSP 没拦'
+      } catch (e) {
+        p.className = 'pass'
+        p.textContent = '✅ eval 被 CSP 拦了: ' + e.message
+      }
+      out.appendChild(p)
+    })
+  </script>
+
+  <h2>4. Image — img-src 'self' https: data:</h2>
+  <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='40'><rect width='100' height='40' fill='%2316a34a'/><text x='10' y='25' fill='white'>data: OK</text></svg>" alt="data URL" />
+  <img src="https://placehold.co/100x40/2563eb/white?text=https+OK" alt="https" />
+  <img src="http://placehold.co/100x40" alt="http 应该被升级或拦" />
+
+  <h2>5. fetch 跨域 — connect-src 限制</h2>
+  <button id="btn-fetch-allow">fetch httpbin(允许)</button>
+  <button id="btn-fetch-deny">fetch example.com(应拦)</button>
+  <script nonce="DEMO_NONCE">
+    async function tryFetch(url, label) {
+      const out = document.getElementById('output')
+      const p = document.createElement('p')
+      try {
+        await fetch(url)
+        p.className = 'pass'
+        p.textContent = '✅ ' + label + ': 通过 (' + url + ')'
+      } catch (e) {
+        p.className = 'fail'
+        p.textContent = '❌ ' + label + ': 拦了 (' + e.message + ')'
+      }
+      out.appendChild(p)
+    }
+    document.getElementById('btn-fetch-allow').addEventListener('click',
+      () => tryFetch('https://httpbin.org/get', 'allowed'))
+    document.getElementById('btn-fetch-deny').addEventListener('click',
+      () => tryFetch('https://example.com/', 'should-block'))
+  </script>
+
+  <h2>6. iframe — frame-ancestors 'none' 不让别人嵌我</h2>
+  <p class="info">这页设了 frame-ancestors 'none',你试着在另一个 HTML 里 &lt;iframe src=&quot;这个文件&quot;&gt; → 浏览器会拒绝渲染。</p>
+
+  <h2>7. 内联 style</h2>
+  <p style="color: blue;">如果这行是蓝色 → style-src 'unsafe-inline' 生效</p>
+
+  <h2>8. javascript: URL — 应该被拦</h2>
+  <a id="js-link" href="javascript:document.getElementById('output').insertAdjacentHTML('beforeend','<p class=fail>❌ javascript: URL 执行了</p>')">
+    点击试 javascript: URL
+  </a>
+
+  <h2>9. 动态 import script(带 nonce 链)</h2>
+  <button id="btn-dynamic">动态加载 script</button>
+  <script nonce="DEMO_NONCE">
+    document.getElementById('btn-dynamic').addEventListener('click', () => {
+      const script = document.createElement('script')
+      // strict-dynamic 信任 nonce 脚本动态加载的 script,所以不用再传 nonce
+      script.textContent = `
+        const out = document.getElementById('output')
+        const p = document.createElement('p')
+        p.className = 'pass'
+        p.textContent = '✅ 动态 script 加载成功(strict-dynamic 信任 nonce 链)'
+        out.appendChild(p)
+      `
+      document.head.appendChild(script)
+    })
+  </script>
+
+  <h2>10. 看 console</h2>
+  <p>F12 打开 Console,CSP 违规会输出:</p>
+  <pre>Refused to execute inline script because it violates the following Content Security Policy directive: "script-src 'self' 'nonce-...' 'strict-dynamic'". Either the 'unsafe-inline' keyword, a hash ('sha256-...'), or a nonce ('nonce-...') is required to enable inline execution.</pre>
+
+  <h2>如何在生产用</h2>
+  <ol>
+    <li>用 HTTP 头(不是 meta)</li>
+    <li>每个请求生成新 nonce(中间件)</li>
+    <li>先用 Content-Security-Policy-Report-Only 灰度</li>
+    <li>用 report-uri / report-to 收集违规</li>
+    <li>strict-dynamic 替代逐 origin 白名单</li>
+  </ol>
+</body>
+</html>

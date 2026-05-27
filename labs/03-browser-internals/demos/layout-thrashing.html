@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>Layout Thrashing vs Composite-only</title>
+  <style>
+    body { font: 14px/1.6 system-ui; padding: 24px; }
+    .box { width: 50px; height: 50px; background: #4af; margin: 4px; display: inline-block; }
+    .container { border: 1px solid #ccc; padding: 8px; min-height: 60px; }
+    button { padding: 8px 16px; margin-right: 8px; margin-bottom: 8px; }
+    output { display: block; margin-top: 12px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <h1>Layout 抖动 vs 仅 Composite —— 性能对比</h1>
+  <p>开启 DevTools Performance 录制后再点按钮,你会看到完全不同的火焰图。</p>
+
+  <button onclick="bad()">❌ 强制同步布局 (Layout Thrashing) × 1000</button>
+  <button onclick="good()">✅ 批量读写 × 1000</button>
+  <button onclick="composite()">🚀 transform 触发 Composite-only × 1000</button>
+
+  <output id="result"></output>
+  <div class="container" id="container"></div>
+
+  <script>
+    const c = document.getElementById('container')
+    const result = document.getElementById('result')
+
+    function setup() {
+      c.innerHTML = ''
+      const boxes = []
+      for (let i = 0; i < 1000; i++) {
+        const b = document.createElement('div')
+        b.className = 'box'
+        c.appendChild(b)
+        boxes.push(b)
+      }
+      return boxes
+    }
+
+    // 反例:在循环里反复 read + write,每次 read 都强制 layout
+    function bad() {
+      const boxes = setup()
+      const t0 = performance.now()
+      for (const b of boxes) {
+        const w = b.offsetWidth         // 读 → 强制 layout
+        b.style.width = (w + 1) + 'px'  // 写 → 标脏
+      }
+      result.textContent = `❌ Layout Thrashing: ${(performance.now() - t0).toFixed(2)}ms`
+    }
+
+    // 正确:先 read 全部,再 write 全部
+    function good() {
+      const boxes = setup()
+      const t0 = performance.now()
+      const widths = boxes.map(b => b.offsetWidth)    // 只触发 1 次 layout
+      boxes.forEach((b, i) => b.style.width = (widths[i] + 1) + 'px')
+      result.textContent = `✅ Batched read/write: ${(performance.now() - t0).toFixed(2)}ms`
+    }
+
+    // 极优:transform 走 GPU 合成,根本不触发 layout/paint
+    function composite() {
+      const boxes = setup()
+      const t0 = performance.now()
+      boxes.forEach((b, i) => b.style.transform = `translateX(${i % 10}px)`)
+      result.textContent = `🚀 Composite-only (transform): ${(performance.now() - t0).toFixed(2)}ms`
+    }
+  </script>
+
+  <h3>核心规则</h3>
+  <ol>
+    <li>读取 layout 信息 (`offsetWidth` `getBoundingClientRect` `getComputedStyle`) 之前如果有 pending 的样式改动,浏览器**必须先 layout**</li>
+    <li>所以反复 read → write 会触发 1000 次 layout,而不是 1 次</li>
+    <li>解决:批量先 read 全部,再 write 全部(FastDOM 库的核心思想)</li>
+    <li>更优:用 `transform` / `opacity` 让 compositor 接管,完全跳过 layout/paint</li>
+  </ol>
+</body>
+</html>

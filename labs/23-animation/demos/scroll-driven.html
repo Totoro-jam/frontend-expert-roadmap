@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scroll-driven Animations Demo</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+/* =====================================================
+   全局
+   ===================================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0a0a0a;
+  color: #fff;
+  line-height: 1.5;
+  /* CSS Scroll-driven 需要可滚动 root */
+}
+.section {
+  min-height: 100vh;
+  padding: 4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #222;
+}
+h1 { font-size: 2rem; margin-bottom: 1rem; }
+p { max-width: 600px; text-align: center; opacity: 0.7; }
+
+/* =====================================================
+   1. 顶部进度条(scroll() timeline)
+   ===================================================== */
+@keyframes growProgress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff);
+  transform-origin: 0 50%;
+  z-index: 100;
+  /* CSS scroll-driven:进度跟着滚动条 */
+  animation: growProgress linear;
+  animation-timeline: scroll(root block);
+}
+
+/* =====================================================
+   2. 元素进入视口时 fade-in(view() timeline)
+   ===================================================== */
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  padding: 3rem;
+  border-radius: 16px;
+  width: min(500px, 90%);
+  margin-bottom: 1rem;
+
+  animation: appear linear both;
+  animation-timeline: view();
+  /* entry: 元素从屏幕下方进入到完全可见的过程  */
+  /* exit:  元素从完全可见到完全离开屏幕的过程  */
+  animation-range: entry 0% cover 30%;
+}
+
+/* =====================================================
+   3. Parallax 视差(背景跟滚动)
+   ===================================================== */
+@keyframes parallaxBg {
+  from { transform: translateY(-20%); }
+  to   { transform: translateY(20%); }
+}
+
+.parallax {
+  position: relative;
+  overflow: hidden;
+  height: 80vh;
+  margin: 4rem 0;
+}
+
+.parallax-bg {
+  position: absolute;
+  inset: -20% 0;
+  background:
+    radial-gradient(circle at 30% 50%, #ff006e44, transparent 50%),
+    radial-gradient(circle at 70% 50%, #3a86ff44, transparent 50%),
+    #0a0a0a;
+  animation: parallaxBg linear;
+  animation-timeline: view();
+  animation-range: cover;
+}
+
+.parallax-content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+/* =====================================================
+   4. 横向滚动揭示(scroll() + named timeline)
+   ===================================================== */
+.horizontal-stage {
+  /* 创建一个命名的 scroll timeline */
+  scroll-timeline: --hscroll x;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 60vh;
+  scroll-snap-type: x mandatory;
+  display: flex;
+}
+
+.horizontal-stage > .panel {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 900;
+}
+.horizontal-stage > .panel:nth-child(1) { background: #ff006e; }
+.horizontal-stage > .panel:nth-child(2) { background: #8338ec; }
+.horizontal-stage > .panel:nth-child(3) { background: #3a86ff; }
+.horizontal-stage > .panel:nth-child(4) { background: #06ffa5; color: #000; }
+
+/* 横向进度条 */
+.h-progress {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 4px;
+  background: rgba(255,255,255,.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.h-progress::after {
+  content: '';
+  display: block;
+  height: 100%;
+  background: white;
+  transform-origin: 0 50%;
+  animation: growProgress linear;
+  animation-timeline: --hscroll;
+}
+
+/* =====================================================
+   5. 旋转(继续滚动持续旋转)
+   ===================================================== */
+@keyframes rotate {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 100px;
+  height: 100px;
+  border: 4px solid #fff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  margin: 2rem auto;
+  animation: rotate linear;
+  animation-timeline: scroll(root);
+}
+
+/* =====================================================
+   6. 不支持浏览器兜底
+   ===================================================== */
+@supports not (animation-timeline: scroll()) {
+  /* Polyfill: scroll-timeline-polyfill 或者降级为 IntersectionObserver */
+  .progress-bar { display: none; }
+  .card { opacity: 1; transform: none; animation: none; }
+  .parallax-bg { animation: none; }
+  .spinner { animation: rotate 2s linear infinite; }
+
+  /* 显示提示 */
+  body::before {
+    content: '⚠️ 浏览器不支持 CSS scroll-driven animations。请用 Chrome 115+';
+    display: block;
+    background: orange;
+    color: black;
+    padding: 1rem;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+}
+
+/* =====================================================
+   7. reduced motion 全去掉
+   ===================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+  .card { opacity: 1; transform: none; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- 顶部进度条 -->
+<div class="progress-bar"></div>
+
+<!-- 章节 1:介绍 -->
+<section class="section">
+  <h1>CSS Scroll-driven Animations</h1>
+  <p>无 JS,纯 CSS 驱动的滚动动画。Chrome 115+,Firefox 实验,Safari 进行中。</p>
+  <p style="margin-top: 1rem; font-size: 0.875rem;">↓ 向下滚动</p>
+</section>
+
+<!-- 章节 2:卡片依次进入 -->
+<section class="section">
+  <h1>view() timeline · 进入视口时触发</h1>
+  <p style="margin-bottom: 2rem;">每张卡到 cover 30% 时完成 fade-in</p>
+  <div class="card">Card 1 · animation-range: entry 0% cover 30%</div>
+  <div class="card">Card 2 · 同上</div>
+  <div class="card">Card 3 · 同上</div>
+  <div class="card">Card 4 · 同上</div>
+</section>
+
+<!-- 章节 3:Parallax -->
+<section class="section" style="padding: 0;">
+  <div class="parallax">
+    <div class="parallax-bg"></div>
+    <div class="parallax-content">背景跟滚动错位移动 (parallax)</div>
+  </div>
+</section>
+
+<!-- 章节 4:Spinner 跟滚动 -->
+<section class="section">
+  <h1>scroll() timeline · 全局滚动驱动</h1>
+  <p>这个圆环的旋转角度 = 页面滚动进度</p>
+  <div class="spinner"></div>
+</section>
+
+<!-- 章节 5:横向 scroll snap + 进度条 -->
+<section class="section" style="padding: 0; position: relative;">
+  <div class="horizontal-stage">
+    <div class="panel">1</div>
+    <div class="panel">2</div>
+    <div class="panel">3</div>
+    <div class="panel">4</div>
+  </div>
+  <div class="h-progress"></div>
+</section>
+
+<!-- 章节 6:理论 -->
+<section class="section">
+  <h1>核心 API</h1>
+  <pre style="background: #1a1a1a; padding: 2rem; border-radius: 8px; font-size: 0.875rem; line-height: 1.6;">
+/* 跟随整个文档滚动 */
+animation-timeline: scroll();
+animation-timeline: scroll(root block);   /* 主滚动条,块方向 */
+animation-timeline: scroll(nearest inline); /* 最近滚动祖先,行方向 */
+
+/* 跟随元素进入/离开视口 */
+animation-timeline: view();
+animation-range: entry 0% cover 50%;
+/*
+  entry:  元素开始进入视口
+  contain: 元素完全在视口内
+  cover:  从进入开始到完全离开
+  exit:   元素开始离开视口
+  例: entry 0% cover 30% = 从一进入到 cover 进度 30%
+*/
+
+/* 命名 timeline */
+.scroller { scroll-timeline: --my-scroll inline; }
+.element  { animation-timeline: --my-scroll; }
+
+/* 命名 view */
+.target  { view-timeline: --my-view; }
+.linked  { animation-timeline: --my-view; }
+  </pre>
+</section>
+
+<!-- 章节 7:实战 tips -->
+<section class="section">
+  <h1>真实项目 tips</h1>
+  <ul style="text-align: left; max-width: 600px; opacity: 0.8;">
+    <li>animation-fill-mode: both 让动画状态保留</li>
+    <li>用 transform / opacity,别动 width/height</li>
+    <li>scroll() 在主滚动条,通常 root 比 nearest 更稳</li>
+    <li>view() 配 animation-range 让动画精准对应位置</li>
+    <li>嵌套滚动容器:scroll(nearest) 找最近的</li>
+    <li>polyfill:<code style="background:#222;padding:2px 6px;border-radius:4px;">scroll-timeline-polyfill</code></li>
+    <li>调试:Chrome DevTools → Animations 面板</li>
+    <li>iOS Safari 17.5+ 支持 view() 但不支持 named scroll-timeline</li>
+  </ul>
+</section>
+
+</body>
+</html>

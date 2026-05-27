@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>5 种图片加载策略对比</title>
+<style>
+  body { font-family: system-ui; padding: 20px; max-width: 900px }
+  section { border: 1px solid #ddd; padding: 16px; margin: 16px 0; border-radius: 6px }
+  h2 { margin-top: 0 }
+  .img-box {
+    width: 100%; max-width: 600px; aspect-ratio: 16/9;
+    background: #f0f0f0; display: block; margin: 8px 0;
+    border: 1px dashed #ccc;
+  }
+  img { display: block; width: 100%; max-width: 600px; aspect-ratio: 16/9; object-fit: cover }
+  code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px }
+  .scroll-spacer { height: 80vh; background: linear-gradient(to bottom, #fafafa, #fff) }
+  .blur { filter: blur(20px); transition: filter 0.5s }
+  .blur.loaded { filter: blur(0) }
+  .stat { color: #666; font-size: 13px; margin: 4px 0 }
+</style>
+</head>
+<body>
+
+<h1>图片加载策略对比</h1>
+<p>打开 DevTools → Network → 看 priority 列和 timing,体会区别。</p>
+
+<section>
+<h2>1. Eager(默认):立刻全部加载</h2>
+<p class="stat">所有 &lt;img&gt; 一进 DOM 就开始下,小图无所谓,LCP 大图必须这个</p>
+<img src="https://picsum.photos/seed/1/800/450" alt="eager 1">
+<code>&lt;img src="..." /&gt;</code>
+</section>
+
+<section>
+<h2>2. LCP 图:加 fetchpriority="high"</h2>
+<p class="stat">告诉浏览器:这是首屏最重要的图,优先调度</p>
+<img src="https://picsum.photos/seed/2/800/450" alt="lcp" fetchpriority="high">
+<code>&lt;img fetchpriority="high" /&gt;</code>
+</section>
+
+<section>
+<h2>3. Native lazy loading</h2>
+<p class="stat">浏览器原生支持,无需 JS,viewport 临近时才下载</p>
+<div class="scroll-spacer">↓ 往下滚 ↓</div>
+<img src="https://picsum.photos/seed/3/800/450" alt="lazy" loading="lazy" decoding="async">
+<code>&lt;img loading="lazy" decoding="async" /&gt;</code>
+</section>
+
+<section>
+<h2>4. IntersectionObserver(自定义控制)</h2>
+<p class="stat">需要更精细控制时(占位、动效、加载追踪)</p>
+<div class="scroll-spacer">↓ 再滚 ↓</div>
+<img class="img-box io-img" data-src="https://picsum.photos/seed/4/800/450" alt="io">
+<pre><code>const io = new IntersectionObserver((entries) =&gt; {
+  entries.forEach(e =&gt; {
+    if (e.isIntersecting) {
+      const img = e.target
+      img.src = img.dataset.src
+      io.unobserve(img)
+    }
+  })
+}, { rootMargin: '200px' })  // 提前 200px 加载</code></pre>
+</section>
+
+<section>
+<h2>5. LQIP / BlurHash:占位 + 模糊过渡</h2>
+<p class="stat">先显示 base64 缩略图,大图加载完再切换</p>
+<div class="scroll-spacer">↓ 最后滚 ↓</div>
+<img
+  class="img-box blur lqip-img"
+  src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%23667'/%3E%3C/svg%3E"
+  data-src="https://picsum.photos/seed/5/800/450"
+  alt="lqip"
+>
+<p class="stat">真实方案:next/image / @plaiceholder/next / blurhash / thumbhash</p>
+</section>
+
+<section>
+<h2>对比表</h2>
+<table border="1" cellpadding="6" style="border-collapse:collapse">
+<thead><tr><th>策略</th><th>适合</th><th>LCP 友好</th><th>实现成本</th></tr></thead>
+<tbody>
+<tr><td>eager</td><td>首屏 LCP 图</td><td>+</td><td>0</td></tr>
+<tr><td>fetchpriority=high</td><td>LCP 图必加</td><td>++</td><td>0</td></tr>
+<tr><td>loading=lazy</td><td>屏外图</td><td>0(不影响 LCP)</td><td>0</td></tr>
+<tr><td>IntersectionObserver</td><td>需自定义动画 / 追踪</td><td>0</td><td>低</td></tr>
+<tr><td>LQIP / BlurHash</td><td>大图 + 慢网</td><td>+</td><td>中(需构建期生成)</td></tr>
+</tbody>
+</table>
+</section>
+
+<script>
+// IntersectionObserver 演示
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const img = e.target
+      img.src = img.dataset.src
+      img.classList.remove('img-box')
+      io.unobserve(img)
+    }
+  })
+}, { rootMargin: '200px' })
+
+document.querySelectorAll('.io-img').forEach(img => io.observe(img))
+
+// LQIP 加载完去掉模糊
+document.querySelectorAll('.lqip-img').forEach(img => {
+  const big = new Image()
+  big.src = img.dataset.src
+  big.onload = () => {
+    img.src = big.src
+    img.classList.add('loaded')
+    img.classList.remove('img-box')
+  }
+})
+</script>
+
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>AbortController: 取消一切异步</title>
+  <style>
+    body { font: 14px/1.6 system-ui; padding: 24px; max-width: 600px; }
+    input { width: 100%; padding: 8px; font-size: 16px; }
+    .log { background: #f4f4f4; padding: 12px; margin-top: 12px; max-height: 300px; overflow: auto; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <h1>AbortController —— 防抖搜索的现代姿势</h1>
+  <p>在输入框打字,新请求会取消旧请求(看 Network 面板里 status 是 "(canceled)")</p>
+
+  <input id="search" placeholder="输入搜索词..." />
+  <div class="log" id="log"></div>
+
+  <script>
+    const input = document.getElementById('search')
+    const log = document.getElementById('log')
+    const out = (s) => log.innerHTML = `<div>${new Date().toISOString().slice(11,19)} ${s}</div>` + log.innerHTML
+
+    let currentController = null
+
+    input.addEventListener('input', async (e) => {
+      // 取消上一次请求
+      currentController?.abort()
+      const controller = currentController = new AbortController()
+
+      const q = e.target.value
+      if (!q) return
+      out(`🔍 搜索 "${q}"`)
+
+      try {
+        // 用 GitHub 的公开 API 演示(注意 rate limit)
+        const res = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(q)}`, {
+          signal: controller.signal,
+        })
+        const data = await res.json()
+        out(`✅ "${q}" 返回 ${data.total_count} 条`)
+      } catch (err) {
+        if (err.name === 'AbortError') out(`⚠️ "${q}" 被取消`)
+        else out(`❌ 错误: ${err.message}`)
+      }
+    })
+
+    // ---- AbortController 的全部用法 ----
+    /*
+
+    // 1. fetch
+    fetch(url, { signal: controller.signal })
+
+    // 2. addEventListener
+    el.addEventListener('click', handler, { signal: controller.signal })
+    // controller.abort() 自动解绑
+
+    // 3. Web Animations API
+    el.animate(keyframes, { signal: controller.signal })
+
+    // 4. 超时(原生!不用自己写 setTimeout)
+    fetch(url, { signal: AbortSignal.timeout(5000) })
+
+    // 5. 任一信号:AbortSignal.any([s1, s2])
+    fetch(url, { signal: AbortSignal.any([userSignal, timeoutSignal]) })
+
+    // 6. 自定义 reason
+    controller.abort(new Error('user navigated away'))
+    */
+  </script>
+
+  <h3>核心理念</h3>
+  <p>AbortController 是浏览器的「**取消信号统一接口**」。
+  以前每个异步 API 都自己定义取消方式(setTimeout 用 clearTimeout、XHR 用 .abort()、自定义 Promise 想取消却没办法)。
+  现在所有现代 API 都接受 `signal`,一个信号能取消多个相关任务。</p>
+</body>
+</html>

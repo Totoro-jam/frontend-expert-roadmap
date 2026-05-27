@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>无障碍 Modal — 完整实现</title>
+  <style>
+    body { font: 14px/1.6 system-ui; padding: 24px; }
+    button { padding: 8px 16px; font-size: 14px; cursor: pointer; }
+    dialog { padding: 24px; border-radius: 8px; border: 1px solid #ccc; max-width: 400px; }
+    dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+    dialog form { display: flex; flex-direction: column; gap: 8px; }
+    .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <h1>无障碍 Modal</h1>
+  <p>用浏览器原生 `<dialog>` 元素,自动获得:</p>
+  <ul>
+    <li>焦点陷阱(Tab 不会跳出)</li>
+    <li>ESC 自动关闭</li>
+    <li>Backdrop 点击</li>
+    <li>关闭后焦点返回触发按钮</li>
+    <li>`aria-modal` `role="dialog"` 自动应用</li>
+  </ul>
+
+  <button id="open">打开 Modal</button>
+
+  <dialog id="my-dialog" aria-labelledby="dialog-title">
+    <form method="dialog">
+      <h2 id="dialog-title">确认操作</h2>
+      <label>
+        姓名
+        <input name="name" required autofocus />
+      </label>
+      <label>
+        邮箱
+        <input type="email" name="email" required />
+      </label>
+      <div class="actions">
+        <button value="cancel" type="button" onclick="dlg.close('cancel')">取消</button>
+        <button value="ok" type="submit">确定</button>
+      </div>
+    </form>
+  </dialog>
+
+  <p id="result"></p>
+
+  <script>
+    const dlg = document.getElementById('my-dialog')
+    const openBtn = document.getElementById('open')
+    const result = document.getElementById('result')
+
+    openBtn.addEventListener('click', () => dlg.showModal())
+
+    dlg.addEventListener('close', () => {
+      result.textContent = `Dialog 关闭: ${dlg.returnValue}`
+      // ✨ 浏览器自动把焦点还给 openBtn
+    })
+
+    // 点 backdrop 关闭(原生不支持,手写)
+    dlg.addEventListener('click', (e) => {
+      const rect = dlg.getBoundingClientRect()
+      const inDialog = rect.top <= e.clientY && e.clientY <= rect.top + rect.height
+        && rect.left <= e.clientX && e.clientX <= rect.left + rect.width
+      if (!inDialog) dlg.close('backdrop')
+    })
+  </script>
+
+  <h2>如果不能用 `<dialog>` 的话</h2>
+  <pre><code>// 手动实现要做的事:
+// 1. role="dialog" + aria-modal="true" + aria-labelledby
+// 2. 打开时记住 document.activeElement
+// 3. 焦点移到 modal 第一个 focusable 元素
+// 4. 实现焦点陷阱:监听 Tab,到达边界时循环
+// 5. ESC 关闭
+// 6. inert 属性把背景内容设为不可交互(替代旧的 aria-hidden 大法)
+// 7. 关闭后 .focus() 回原元素
+</code></pre>
+
+  <p><a href="https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/">完整 WAI-ARIA Modal Pattern</a></p>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>:has() —— 父选择器的 5 个实用模式</title>
+  <style>
+    body { font: 14px/1.6 system-ui; padding: 24px; max-width: 700px; }
+    section { margin-bottom: 32px; padding: 16px; border: 1px solid #ddd; border-radius: 8px; }
+    h2 { margin-top: 0; }
+
+    /* 1. 卡片包含某种内容时改样式 */
+    .card { padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; }
+    .card:has(img) { background: #eef; }       /* 有图的卡片底色 */
+    .card:has(.tag) { border-color: #fa0; }    /* 有标签的卡片边框 */
+
+    /* 2. 表单验证联动 */
+    form { display: flex; flex-direction: column; gap: 8px; }
+    form button { padding: 8px 16px; }
+    form:has(:invalid) button { opacity: 0.4; cursor: not-allowed; }
+    form:has(input:focus) { background: #ffd; padding: 8px; border-radius: 4px; }
+
+    /* 3. 多选 checkbox 联动「全选」状态(纯 CSS) */
+    .list:has(input:not(:checked)) .all { color: #999; }
+    .list:has(input:checked) ~ .summary::before { content: '✅ '; }
+    .list:not(:has(input:checked)) ~ .summary::before { content: '☐ '; }
+
+    /* 4. 子元素 hover → 父元素加阴影 */
+    .product:has(button:hover) { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .product { padding: 16px; border: 1px solid #ddd; border-radius: 8px; transition: box-shadow 0.2s; }
+
+    /* 5. 表格相邻空 cell 时合并视觉 */
+    tr:has(td:empty) { background: #fee; }
+    table { border-collapse: collapse; }
+    td { border: 1px solid #ccc; padding: 8px 16px; }
+  </style>
+</head>
+<body>
+  <h1>:has() —— 父选择器的革命</h1>
+
+  <section>
+    <h2>1. 卡片根据子元素改样式</h2>
+    <div class="card">普通卡片</div>
+    <div class="card">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%234af'/%3E%3C/svg%3E" /> 带图卡片(自动蓝底)
+    </div>
+    <div class="card">带标签卡片(自动橙边) <span class="tag">[标签]</span></div>
+  </section>
+
+  <section>
+    <h2>2. 表单 — 全部有效才能提交 / focus 时高亮父级</h2>
+    <form>
+      <input type="email" placeholder="email" required />
+      <input type="text" placeholder="name" required />
+      <button>提交</button>
+    </form>
+    <p>表单有 invalid 字段时按钮自动灰,任意 input focus 时整个表单高亮。**零 JS**。</p>
+  </section>
+
+  <section>
+    <h2>3. 多选状态联动「全选」(无 JS)</h2>
+    <div class="list">
+      <label><input type="checkbox" /> Item 1</label><br>
+      <label><input type="checkbox" /> Item 2</label><br>
+      <label><input type="checkbox" /> Item 3</label><br>
+      <p class="all">全部勾选时,这行不灰</p>
+    </div>
+    <p class="summary">至少有一个选中</p>
+  </section>
+
+  <section>
+    <h2>4. 子按钮 hover → 父卡片阴影</h2>
+    <div class="product">
+      <h3>iPhone</h3>
+      <p>¥6999</p>
+      <button>加购物车</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. 表格行有空 cell → 整行变红</h2>
+    <table>
+      <tr><td>张三</td><td>30</td><td>工程师</td></tr>
+      <tr><td>李四</td><td></td><td>设计师</td></tr>
+      <tr><td>王五</td><td>25</td><td></td></tr>
+    </table>
+  </section>
+
+  <h2>更多想法</h2>
+  <ul>
+    <li>导航有下拉子菜单的 item 自动加箭头:<code>li:has(ul)::after { content: '▼' }</code></li>
+    <li>暗黑模式跟随系统:<code>html:has(input#dark:checked) { color-scheme: dark }</code></li>
+    <li>Layout 根据是否有 sidebar 调整:<code>main:has(+ aside) { grid-column: 1 }</code></li>
+  </ul>
+</body>
+</html>

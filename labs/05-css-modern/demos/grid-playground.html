@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>Grid 实战:三种最常用模式</title>
+  <style>
+    body { font: 14px/1.6 system-ui; padding: 24px; }
+    h2 { margin-top: 32px; }
+    .card { padding: 24px; background: #4af; color: white; border-radius: 8px; }
+
+    /* 1. 自动响应式卡片墙 */
+    .auto-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    /* 2. 命名 area —— 用 ASCII 画布局 */
+    .layout {
+      display: grid;
+      grid-template-areas:
+        "header header header"
+        "nav    main   aside"
+        "footer footer footer";
+      grid-template-columns: 200px 1fr 200px;
+      grid-template-rows: 60px 1fr 60px;
+      gap: 8px;
+      height: 400px;
+    }
+    .layout > * { padding: 16px; background: #ddd; border-radius: 4px; }
+    .layout > header { grid-area: header; background: #fcc; }
+    .layout > nav { grid-area: nav; background: #cfc; }
+    .layout > main { grid-area: main; background: #ccf; }
+    .layout > aside { grid-area: aside; background: #ffc; }
+    .layout > footer { grid-area: footer; background: #fcf; }
+
+    /* 3. Subgrid —— 子项目对齐到父 grid 轨道 */
+    .album-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: auto auto auto;
+      gap: 8px;
+    }
+    .album {
+      grid-row: span 3;
+      display: grid;
+      grid-template-rows: subgrid;   /* 行轨道继承父 grid */
+      gap: 4px;
+      background: #eee;
+      padding: 8px;
+    }
+    .album > * { padding: 8px; background: white; }
+
+    /* 经典面试题:完美居中 */
+    .center { display: grid; place-items: center; height: 100px; background: #efe; }
+  </style>
+</head>
+<body>
+  <h1>Grid 实战:三种最常用模式</h1>
+
+  <h2>1. 自动响应式卡片墙 (auto-fit + minmax)</h2>
+  <p>调整窗口宽度,卡片自动换行。一行 CSS 完成。</p>
+  <div class="auto-grid">
+    <div class="card">Card 1</div>
+    <div class="card">Card 2</div>
+    <div class="card">Card 3</div>
+    <div class="card">Card 4</div>
+    <div class="card">Card 5</div>
+    <div class="card">Card 6</div>
+  </div>
+
+  <h2>2. 命名 area —— 用 ASCII 画布局</h2>
+  <p>修改 `grid-template-areas` 就能换布局,响应式只改这一处。</p>
+  <div class="layout">
+    <header>Header</header>
+    <nav>Nav</nav>
+    <main>Main</main>
+    <aside>Aside</aside>
+    <footer>Footer</footer>
+  </div>
+
+  <h2>3. Subgrid —— 列表项内部对齐到父 grid</h2>
+  <p>三张专辑的标题、副标题、播放按钮**自动对齐**(高度相同),不需要写死高度。</p>
+  <div class="album-grid">
+    <div class="album">
+      <div>Short Title</div>
+      <div>Sub</div>
+      <div>▶ Play</div>
+    </div>
+    <div class="album">
+      <div>A Much Longer Album Title That Wraps</div>
+      <div>Sub with more text here</div>
+      <div>▶ Play</div>
+    </div>
+    <div class="album">
+      <div>Medium Title</div>
+      <div>Sub</div>
+      <div>▶ Play</div>
+    </div>
+  </div>
+
+  <h2>4. Bonus: 一行居中</h2>
+  <div class="center">place-items: center</div>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Virtual List vs 全量渲染</title>
+<style>
+  body { font-family: system-ui; padding: 20px }
+  .container { display: flex; gap: 24px }
+  .col { flex: 1 }
+  .scroll-area { border: 1px solid #ccc; height: 400px; overflow: auto }
+  .row { padding: 8px 12px; border-bottom: 1px solid #eee }
+  .stats { color: #666; font-size: 12px; padding: 8px }
+  button { padding: 10px 20px; margin: 4px 0 }
+</style>
+</head>
+<body>
+
+<h1>10,000 行列表:全量 vs 虚拟</h1>
+
+<div>
+  <button id="render-full">渲染全量 10000 行</button>
+  <button id="render-virtual">渲染虚拟列表(只显示可见 + overscan)</button>
+  <button id="reset">清空</button>
+</div>
+
+<div class="container">
+  <div class="col">
+    <h3>左:你选的方案</h3>
+    <div class="stats" id="stats">未渲染</div>
+    <div class="scroll-area" id="area"></div>
+  </div>
+</div>
+
+<script>
+const ITEMS = Array.from({ length: 10000 }, (_, i) => ({ id: i, text: `Row #${i} — ${Math.random().toString(36).slice(2)}` }))
+const ROW_HEIGHT = 36
+const OVERSCAN = 5
+
+const area = document.getElementById('area')
+const stats = document.getElementById('stats')
+
+document.getElementById('reset').onclick = () => {
+  area.innerHTML = ''
+  stats.textContent = '未渲染'
+}
+
+// ============================================
+// 全量渲染
+// ============================================
+document.getElementById('render-full').onclick = () => {
+  area.innerHTML = ''
+  const t0 = performance.now()
+  const frag = document.createDocumentFragment()
+  for (const item of ITEMS) {
+    const div = document.createElement('div')
+    div.className = 'row'
+    div.textContent = item.text
+    frag.appendChild(div)
+  }
+  area.appendChild(frag)
+  const t1 = performance.now()
+  stats.textContent = `全量: ${(t1 - t0).toFixed(0)}ms, DOM 节点 ${area.querySelectorAll('.row').length}`
+}
+
+// ============================================
+// 虚拟列表
+// ============================================
+document.getElementById('render-virtual').onclick = () => {
+  area.innerHTML = ''
+  const totalHeight = ITEMS.length * ROW_HEIGHT
+
+  // 高度撑开的占位容器
+  const spacer = document.createElement('div')
+  spacer.style.height = totalHeight + 'px'
+  spacer.style.position = 'relative'
+  area.appendChild(spacer)
+
+  function render() {
+    const scrollTop = area.scrollTop
+    const viewport = area.clientHeight
+    const startIdx = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN)
+    const endIdx = Math.min(ITEMS.length, Math.ceil((scrollTop + viewport) / ROW_HEIGHT) + OVERSCAN)
+
+    // 清空再画当前可见
+    spacer.innerHTML = ''
+    for (let i = startIdx; i < endIdx; i++) {
+      const div = document.createElement('div')
+      div.className = 'row'
+      div.textContent = ITEMS[i].text
+      div.style.position = 'absolute'
+      div.style.top = i * ROW_HEIGHT + 'px'
+      div.style.left = '0'
+      div.style.right = '0'
+      div.style.height = ROW_HEIGHT + 'px'
+      spacer.appendChild(div)
+    }
+
+    stats.textContent = `虚拟: 显示 ${startIdx}–${endIdx},DOM 节点 ${endIdx - startIdx}(总 ${ITEMS.length})`
+  }
+
+  const t0 = performance.now()
+  render()
+  const t1 = performance.now()
+  stats.textContent += ` · 初始渲染 ${(t1 - t0).toFixed(1)}ms`
+
+  // 监听 scroll
+  area.onscroll = render
+}
+</script>
+
+<h3>对比观察</h3>
+<ul>
+  <li>全量:渲染 200-500ms,滚动可能掉帧</li>
+  <li>虚拟:渲染 < 5ms,DOM 节点 20 个,滚动丝滑</li>
+  <li>真实项目用 <a href="https://tanstack.com/virtual">TanStack Virtual</a> 或 <a href="https://github.com/bvaughn/react-window">react-window</a></li>
+</ul>
+
+</body>
+</html>

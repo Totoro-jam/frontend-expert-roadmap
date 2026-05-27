@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Resource Hints 全套演示</title>
+
+<!-- ============================================ -->
+<!-- 1. dns-prefetch:仅 DNS 解析,最便宜 -->
+<!-- ============================================ -->
+<link rel="dns-prefetch" href="//fonts.googleapis.com">
+<link rel="dns-prefetch" href="//api.example.com">
+
+<!-- ============================================ -->
+<!-- 2. preconnect:DNS + TCP + TLS,~150ms 节省 -->
+<!--   用 crossorigin 给字体 / API 用 -->
+<!-- ============================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<!-- ============================================ -->
+<!-- 3. preload:本页 critical 资源,立刻最高优先级下载 -->
+<!--   必须指定 as,否则浏览器拒绝 -->
+<!-- ============================================ -->
+<link rel="preload" href="/critical.css" as="style">
+<link rel="preload" href="/hero.webp" as="image" fetchpriority="high">
+<link rel="preload" href="/Inter.woff2" as="font" type="font/woff2" crossorigin>
+
+<!-- ⚠️ 反面教材:preload 太多反而拖慢 LCP -->
+<!--
+  <link rel="preload" href="/header.png" as="image">  ← 不该 preload 非 LCP 图
+  <link rel="preload" href="/analytics.js" as="script">  ← 不该 preload 非关键 JS
+-->
+
+<!-- ============================================ -->
+<!-- 4. modulepreload:ESM 专用,顺带把 import 链下完 -->
+<!-- ============================================ -->
+<link rel="modulepreload" href="/app.js">
+<!-- 没用 modulepreload 时,浏览器要先下 app.js → 解析 → 才发现还要下 utils.js → 再发现 lodash...瀑布 -->
+
+<!-- ============================================ -->
+<!-- 5. prefetch:浏览器空闲时下,给下一页用 -->
+<!--   不能加 fetchpriority,优先级强制 lowest -->
+<!-- ============================================ -->
+<link rel="prefetch" href="/next-page.html">
+<link rel="prefetch" href="/dashboard.js" as="script">
+
+<!-- ============================================ -->
+<!-- 6. prerender(Speculation Rules,2024+):整页预渲染 -->
+<!--   危险,只对几乎确定要去的页面 -->
+<!-- ============================================ -->
+<script type="speculationrules">
+{
+  "prerender": [
+    { "source": "list", "urls": ["/checkout"] }
+  ],
+  "prefetch": [
+    {
+      "source": "document",
+      "where": { "and": [
+        { "href_matches": "/*" },
+        { "not": { "selector_matches": ".no-prefetch" } }
+      ]},
+      "eagerness": "moderate"
+    }
+  ]
+}
+</script>
+
+<style>
+  body { font-family: system-ui; padding: 20px; max-width: 800px }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0 }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left }
+  th { background: #f0f0f0 }
+  code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px }
+  .ok { color: #2a7 } .bad { color: #c33 }
+</style>
+</head>
+<body>
+
+<h1>Resource Hints 速查</h1>
+
+<h2>优先级 + 适用场景</h2>
+<table>
+<thead><tr>
+  <th>提示</th><th>做什么</th><th>使用时机</th><th>优先级</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td><code>dns-prefetch</code></td>
+  <td>DNS 解析</td>
+  <td>本页/下页要请求其他域</td>
+  <td>最低</td>
+</tr>
+<tr>
+  <td><code>preconnect</code></td>
+  <td>DNS + TCP + TLS</td>
+  <td>~4-6 个最重要的第三方源</td>
+  <td>中</td>
+</tr>
+<tr>
+  <td><code>preload</code></td>
+  <td>立刻下载本页资源</td>
+  <td>LCP 图、关键 CSS、首屏字体</td>
+  <td>最高(Highest)</td>
+</tr>
+<tr>
+  <td><code>modulepreload</code></td>
+  <td>ESM 模块预加载+解析+连同依赖</td>
+  <td>ESM 入口</td>
+  <td>高</td>
+</tr>
+<tr>
+  <td><code>prefetch</code></td>
+  <td>空闲时下,给下一页</td>
+  <td>下一页资源(链接已知)</td>
+  <td>Lowest</td>
+</tr>
+<tr>
+  <td>Speculation Rules <code>prerender</code></td>
+  <td>整页预渲染</td>
+  <td>下一步几乎确定 (&gt;80%)</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+
+<h2>常见陷阱</h2>
+<ul>
+  <li class="bad">preload 字体不加 <code>crossorigin</code> → 浏览器下两次</li>
+  <li class="bad">preload 不写 <code>as=</code> → 浏览器忽略</li>
+  <li class="bad">preload 太多 → LCP 资源排队,反而变慢</li>
+  <li class="bad">preconnect &gt; 6 个 → TCP 连接抢占,反向劣化</li>
+  <li class="bad">prerender 误用 → 浪费数 MB 流量、隐私问题</li>
+  <li class="ok">字体一律 <code>preload + font-display:swap</code></li>
+  <li class="ok">LCP 图一律 <code>fetchpriority="high"</code></li>
+</ul>
+
+<h2>验证</h2>
+<p>DevTools → Network → 右键表头勾上 <code>Priority</code>,看到:</p>
+<ul>
+  <li>Highest(preload critical)</li>
+  <li>High(stylesheet, font, image with fetchpriority=high)</li>
+  <li>Medium(image, script defer)</li>
+  <li>Low / Lowest(prefetch, image lazy)</li>
+</ul>
+
+</body>
+</html>

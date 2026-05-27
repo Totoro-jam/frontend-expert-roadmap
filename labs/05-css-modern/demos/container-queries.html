@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>Container Queries — 同个组件不同形态</title>
+  <style>
+    body { font: 14px/1.6 system-ui; padding: 24px; }
+
+    /* 容器 */
+    .container { container-type: inline-size; border: 2px dashed #ccc; padding: 16px; }
+    .narrow { width: 250px; }
+    .wide   { width: 600px; }
+
+    /* Card 组件 —— 同一份 CSS!*/
+    .card {
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border: 1px solid #ddd;
+      padding: 12px;
+      border-radius: 8px;
+      gap: 12px;
+    }
+    .card img { width: 100%; height: 120px; object-fit: cover; border-radius: 4px; background: #4af; }
+    .card h3 { margin: 0; }
+    .card p { margin: 0; color: #666; }
+
+    /* 容器 ≥ 400px 时,布局变 row */
+    @container (min-width: 400px) {
+      .card { flex-direction: row; }
+      .card img { width: 120px; height: 100%; flex-shrink: 0; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Container Queries —— 组件「自适应」</h1>
+  <p>同一个 `.card` 组件,放在窄容器是 column,放在宽容器是 row。
+  以前要用 React props / className 控制,现在 CSS 自动搞定。</p>
+
+  <h2>窄容器(250px)</h2>
+  <div class="container narrow">
+    <article class="card">
+      <img alt="" />
+      <h3>新闻标题</h3>
+      <p>这是一段摘要文字,描述新闻内容。</p>
+    </article>
+  </div>
+
+  <h2>宽容器(600px)</h2>
+  <div class="container wide">
+    <article class="card">
+      <img alt="" />
+      <h3>新闻标题</h3>
+      <p>这是一段摘要文字,描述新闻内容。</p>
+    </article>
+  </div>
+
+  <h2>对比:用 viewport media query 的弊端</h2>
+  <pre><code>/* ❌ 旧方式:看屏幕宽度 */
+@media (min-width: 768px) {
+  .card { flex-direction: row; }
+}
+/* 问题:如果同一个 card 在 sidebar(窄)和 main(宽)同时出现,
+   一个 viewport 宽度无法兼顾两个位置 */
+
+/* ✅ 新方式:看容器自己宽度 */
+@container (min-width: 400px) {
+  .card { flex-direction: row; }
+}</code></pre>
+
+  <h2>额外:容器查询单位 cqi / cqb / cqw / cqh</h2>
+  <pre><code>/* 字号根据容器宽度自动调整 */
+.title { font-size: clamp(16px, 5cqi, 32px); }
+/* 5cqi = 容器内联尺寸的 5% */</code></pre>
+</body>
+</html>

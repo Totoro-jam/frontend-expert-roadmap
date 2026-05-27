@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>aria-live: 屏幕阅读器友好的 Toast</title>
+  <style>
+    body { font: 14px/1.6 system-ui; padding: 24px; }
+    button { padding: 8px 16px; margin-right: 8px; }
+    .toast {
+      position: fixed; right: 16px; bottom: 16px; padding: 12px 16px;
+      background: #333; color: white; border-radius: 6px; font-size: 14px;
+      opacity: 0; transform: translateY(20px); transition: 0.2s;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0;
+      margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>aria-live —— 让屏幕阅读器知道 UI 更新了</h1>
+  <p>开启 VoiceOver(Mac:Cmd+F5),点按钮听一下,体会三种 live region 的差异。</p>
+
+  <button onclick="toast('保存成功', 'polite')">polite(礼貌:等空闲再读)</button>
+  <button onclick="toast('网络断开!', 'assertive')">assertive(立即打断)</button>
+  <button onclick="toast('普通文字')">无 aria-live(屏幕阅读器不会读)</button>
+
+  <!-- ✅ 屏幕阅读器专用区域(视觉隐藏) -->
+  <div class="sr-only" aria-live="polite" id="polite-live"></div>
+  <div class="sr-only" aria-live="assertive" id="assertive-live"></div>
+
+  <!-- 视觉 toast(任何用户都看得到) -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const visualToast = document.getElementById('toast')
+    const politeLive = document.getElementById('polite-live')
+    const assertiveLive = document.getElementById('assertive-live')
+
+    function toast(msg, priority = null) {
+      // 视觉
+      visualToast.textContent = msg
+      visualToast.classList.add('show')
+      setTimeout(() => visualToast.classList.remove('show'), 2000)
+
+      // 屏幕阅读器(关键!视觉 toast 屏幕阅读器看不到)
+      if (priority === 'polite') {
+        politeLive.textContent = msg
+      } else if (priority === 'assertive') {
+        assertiveLive.textContent = msg
+      }
+
+      // ⚠️ 重要:同样内容如果 textContent 没变,某些屏幕阅读器不会再读
+      // 解决:先清空再设
+      // politeLive.textContent = ''
+      // setTimeout(() => politeLive.textContent = msg, 50)
+    }
+  </script>
+
+  <h2>常用 live region 类型</h2>
+  <ul>
+    <li><code>aria-live="polite"</code> — 用户停止操作时朗读。**默认选这个**。</li>
+    <li><code>aria-live="assertive"</code> — 立即打断当前朗读。**只用于严重错误**。</li>
+    <li><code>role="status"</code> — = polite,但更语义化(状态信息)</li>
+    <li><code>role="alert"</code> — = assertive(警告)</li>
+    <li><code>role="log"</code> — 日志区,屏幕阅读器知道是追加</li>
+  </ul>
+
+  <h2>真实场景</h2>
+  <ul>
+    <li>表单提交后的 success/error toast</li>
+    <li>搜索框下方「找到 N 条结果」</li>
+    <li>异步加载完成「加载完成」</li>
+    <li>购物车「已添加到购物车」</li>
+    <li>WebSocket 断开重连提示</li>
+  </ul>
+
+  <h2>反例</h2>
+  <pre><code>// ❌ 视觉 toast 只显示文字,屏幕阅读器完全感知不到
+&lt;div class="toast"&gt;保存成功&lt;/div&gt;
+
+// ✅ 配合 live region
+&lt;div class="toast"&gt;保存成功&lt;/div&gt;
+&lt;div class="sr-only" aria-live="polite"&gt;保存成功&lt;/div&gt;</code></pre>
+</body>
+</html>

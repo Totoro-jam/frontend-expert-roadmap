@@ -1,0 +1,22 @@
+{
+  "name": "frontend-expert-roadmap",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Frontend Expert Learning Roadmap - a pnpm monorepo with 25 independent labs",
+  "author": "dovchen",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "dev": "pnpm --filter $npm_config_lab dev",
+    "test": "pnpm -r --if-present run test",
+    "test:filter": "pnpm --filter $npm_config_lab test",
+    "typecheck": "pnpm -r --if-present run check",
+    "clean": "pnpm -r exec rm -rf node_modules dist .turbo && rm -rf node_modules"
+  }
+}

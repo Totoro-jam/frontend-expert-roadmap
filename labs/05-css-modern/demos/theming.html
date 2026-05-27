@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>CSS 变量 + color-mix + 暗黑模式</title>
+  <style>
+    /* ====== 设计 Token(运行时变量) ====== */
+    :root {
+      /* 主色:用 oklch 调整更感知均匀 */
+      --hue-primary: 240;
+      --primary: oklch(60% 0.2 var(--hue-primary));
+
+      /* 自动派生 hover/active 色 */
+      --primary-hover:  color-mix(in oklch, var(--primary), white 15%);
+      --primary-active: color-mix(in oklch, var(--primary), black 15%);
+      --primary-bg:     color-mix(in oklch, var(--primary) 12%, white);
+
+      /* 中性色 */
+      --text: #1a1a1a;
+      --text-muted: oklch(50% 0 0);
+      --bg: white;
+      --bg-elev: oklch(98% 0 0);
+      --border: oklch(90% 0 0);
+
+      /* 间距 8pt grid */
+      --space-1: 4px;  --space-2: 8px;  --space-3: 16px;  --space-4: 24px;
+
+      /* 圆角 */
+      --radius-sm: 4px;  --radius-md: 8px;  --radius-lg: 12px;
+
+      /* 响应式字号 */
+      --fs-body: clamp(14px, 1vw + 12px, 18px);
+      --fs-h1:   clamp(24px, 3vw + 16px, 48px);
+    }
+
+    /* ====== 暗黑模式 ====== */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --text: oklch(95% 0 0);
+        --text-muted: oklch(70% 0 0);
+        --bg: oklch(15% 0 0);
+        --bg-elev: oklch(20% 0 0);
+        --border: oklch(30% 0 0);
+        --primary: oklch(70% 0.18 var(--hue-primary));
+      }
+    }
+
+    /* ====== 用户手动切换 ====== */
+    html[data-theme="dark"] {
+      --text: oklch(95% 0 0);
+      --bg: oklch(15% 0 0);
+      --bg-elev: oklch(20% 0 0);
+      --border: oklch(30% 0 0);
+      --primary: oklch(70% 0.18 var(--hue-primary));
+    }
+
+    /* ====== 应用层 ====== */
+    body {
+      font: var(--fs-body)/1.6 system-ui;
+      background: var(--bg);
+      color: var(--text);
+      padding: var(--space-4);
+      transition: background 0.2s, color 0.2s;
+    }
+
+    h1 { font-size: var(--fs-h1); }
+
+    .btn {
+      background: var(--primary); color: white;
+      padding: var(--space-2) var(--space-3); border: none;
+      border-radius: var(--radius-md); cursor: pointer;
+      font-size: var(--fs-body);
+    }
+    .btn:hover  { background: var(--primary-hover); }
+    .btn:active { background: var(--primary-active); }
+
+    .card {
+      background: var(--bg-elev); padding: var(--space-3);
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+      margin-top: var(--space-3);
+    }
+
+    .hue-picker { display: flex; gap: 4px; margin-top: 16px; }
+    .hue-picker button {
+      width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent;
+      cursor: pointer;
+    }
+    .hue-picker button.active { border-color: var(--text); }
+  </style>
+</head>
+<body>
+  <h1>主题系统:CSS 变量 + color-mix + oklch</h1>
+
+  <div class="card">
+    <p>这是一段示例文字。色调、明暗、字号全部由 CSS 变量驱动。</p>
+    <button class="btn">主按钮</button>
+  </div>
+
+  <h2>切换主题</h2>
+  <button onclick="setTheme('light')">浅色</button>
+  <button onclick="setTheme('dark')">深色</button>
+  <button onclick="setTheme('auto')">跟随系统</button>
+
+  <h2>切换主色色相(只改一个变量)</h2>
+  <div class="hue-picker" id="hue-picker"></div>
+
+  <h2>核心要点</h2>
+  <ul>
+    <li>CSS 变量是<strong>运行时</strong>:JS 改变量,所有使用方自动更新</li>
+    <li>`color-mix()` 自动派生 hover/active/bg 色,无需手写每个</li>
+    <li>`oklch` 色彩空间感知均匀:`oklch(60% ...)` 和 `oklch(70% ...)` 亮度真的差 10%</li>
+    <li>暗黑模式只改变量,组件代码不变</li>
+    <li>响应式字号用 `clamp()`,不用 media query</li>
+  </ul>
+
+  <script>
+    function setTheme(t) {
+      if (t === 'auto') document.documentElement.removeAttribute('data-theme')
+      else document.documentElement.setAttribute('data-theme', t)
+    }
+
+    // Hue picker
+    const hues = [0, 30, 60, 120, 180, 240, 270, 320]
+    const picker = document.getElementById('hue-picker')
+    hues.forEach((h, i) => {
+      const b = document.createElement('button')
+      b.style.background = `oklch(60% 0.2 ${h})`
+      if (h === 240) b.classList.add('active')
+      b.onclick = () => {
+        document.documentElement.style.setProperty('--hue-primary', h)
+        picker.querySelectorAll('button').forEach(x => x.classList.remove('active'))
+        b.classList.add('active')
+      }
+      picker.appendChild(b)
+    })
+  </script>
+</body>
+</html>

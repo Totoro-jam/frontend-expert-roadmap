@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>BEM 命名示例</title>
+  <style>
+    /* Block */
+    .card {
+      padding: 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      max-width: 320px;
+      margin-bottom: 16px;
+    }
+
+    /* Block modifier */
+    .card--featured {
+      border-color: #4af;
+      background: #eef;
+    }
+
+    /* Element */
+    .card__title { font-size: 18px; margin: 0 0 8px 0; }
+    .card__body  { color: #666; margin: 0 0 12px 0; }
+    .card__footer { display: flex; justify-content: flex-end; }
+
+    /* Element modifier */
+    .card__title--small { font-size: 14px; }
+
+    .card__button {
+      padding: 6px 12px;
+      background: #4af;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .card__button--ghost { background: transparent; color: #4af; border: 1px solid #4af; }
+  </style>
+</head>
+<body>
+  <h1>BEM:Block / Element / Modifier</h1>
+
+  <div class="card">
+    <h2 class="card__title">普通卡片</h2>
+    <p class="card__body">这是默认状态的卡片。Block 是 card,Element 是 card__title / card__body。</p>
+    <div class="card__footer">
+      <button class="card__button">默认</button>
+    </div>
+  </div>
+
+  <div class="card card--featured">
+    <h2 class="card__title card__title--small">推荐卡片 + 小标题</h2>
+    <p class="card__body">card--featured 是 Block 修饰符。card__title--small 是 Element 修饰符。</p>
+    <div class="card__footer">
+      <button class="card__button card__button--ghost">幽灵按钮</button>
+    </div>
+  </div>
+
+  <h2>命名约定</h2>
+  <ul>
+    <li><code>.block</code> — 独立组件</li>
+    <li><code>.block__element</code> — 组件内部元素(双下划线)</li>
+    <li><code>.block--modifier</code> — 状态/变体(双连字符)</li>
+    <li><code>.block__element--modifier</code> — 元素的状态</li>
+  </ul>
+
+  <h2>BEM 的优势</h2>
+  <ul>
+    <li>看到 class 就知道关系(card 是块,card__title 是它的子元素)</li>
+    <li>选择器永远只有一层(全 class),优先级永远相同</li>
+    <li>跨框架通用,无需工具链</li>
+    <li>修改某个组件不影响其他</li>
+  </ul>
+
+  <h2>BEM 的痛点</h2>
+  <ul>
+    <li>class 名长且重复(<code>card card--featured card--dark</code>)</li>
+    <li>嵌套层级深时(<code>card__footer__button__icon</code>)很丑 —— BEM 反例,建议改成新 Block</li>
+    <li>靠纪律,初级开发者很容易破坏约定 —— 用 Stylelint 强制</li>
+  </ul>
+</body>
+</html>

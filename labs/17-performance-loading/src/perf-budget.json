@@ -1,0 +1,40 @@
+[
+  {
+    "path": "/*",
+    "timings": [
+      { "metric": "first-contentful-paint", "budget": 1800 },
+      { "metric": "largest-contentful-paint", "budget": 2500 },
+      { "metric": "interactive", "budget": 3500 },
+      { "metric": "speed-index", "budget": 3000 },
+      { "metric": "total-blocking-time", "budget": 300 }
+    ],
+    "resourceSizes": [
+      { "resourceType": "script", "budget": 170 },
+      { "resourceType": "stylesheet", "budget": 50 },
+      { "resourceType": "image", "budget": 250 },
+      { "resourceType": "font", "budget": 100 },
+      { "resourceType": "media", "budget": 0 },
+      { "resourceType": "third-party", "budget": 100 },
+      { "resourceType": "total", "budget": 600 }
+    ],
+    "resourceCounts": [
+      { "resourceType": "script", "budget": 10 },
+      { "resourceType": "stylesheet", "budget": 4 },
+      { "resourceType": "image", "budget": 20 },
+      { "resourceType": "font", "budget": 4 },
+      { "resourceType": "third-party", "budget": 5 },
+      { "resourceType": "total", "budget": 50 }
+    ]
+  },
+  {
+    "path": "/checkout/*",
+    "timings": [
+      { "metric": "largest-contentful-paint", "budget": 2000 },
+      { "metric": "total-blocking-time", "budget": 200 }
+    ],
+    "resourceSizes": [
+      { "resourceType": "script", "budget": 200 },
+      { "resourceType": "total", "budget": 800 }
+    ]
+  }
+]

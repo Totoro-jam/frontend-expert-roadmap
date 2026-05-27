@@ -1,0 +1,46 @@
+{
+  "color": {
+    "_comment": "Reference tokens(原始值)— 命名按色相 + 数字阶,语义层不直接用这些",
+    "blue":   { "50":{"value":"#eff6ff"}, "100":{"value":"#dbeafe"}, "500":{"value":"#3b82f6"}, "600":{"value":"#2563eb"}, "700":{"value":"#1d4ed8"} },
+    "gray":   { "50":{"value":"#f9fafb"}, "100":{"value":"#f3f4f6"}, "200":{"value":"#e5e7eb"}, "500":{"value":"#6b7280"}, "700":{"value":"#374151"}, "900":{"value":"#111827"} },
+    "red":    { "500":{"value":"#ef4444"}, "600":{"value":"#dc2626"} },
+    "green":  { "500":{"value":"#22c55e"}, "600":{"value":"#16a34a"} },
+    "amber":  { "500":{"value":"#f59e0b"}, "600":{"value":"#d97706"} },
+
+    "_semantic": "Semantic tokens(语义层)— 业务直接消费这些,主题切换在这层换源",
+
+    "bg": {
+      "canvas":      { "value": "{color.gray.50}",  "darkValue": "{color.gray.900}" },
+      "surface":     { "value": "#ffffff",           "darkValue": "{color.gray.700}" },
+      "subtle":      { "value": "{color.gray.100}", "darkValue": "{color.gray.700}" }
+    },
+
+    "text": {
+      "primary":   { "value": "{color.gray.900}", "darkValue": "{color.gray.50}" },
+      "secondary": { "value": "{color.gray.700}", "darkValue": "{color.gray.200}" },
+      "tertiary":  { "value": "{color.gray.500}", "darkValue": "{color.gray.500}" },
+      "inverted":  { "value": "#ffffff",           "darkValue": "{color.gray.900}" }
+    },
+
+    "border": {
+      "default": { "value": "{color.gray.200}", "darkValue": "{color.gray.700}" },
+      "strong":  { "value": "{color.gray.500}", "darkValue": "{color.gray.200}" }
+    },
+
+    "action": {
+      "primary":         { "value": "{color.blue.500}", "darkValue": "{color.blue.500}" },
+      "primary-hover":   { "value": "{color.blue.600}", "darkValue": "{color.blue.500}" },
+      "primary-active":  { "value": "{color.blue.700}", "darkValue": "{color.blue.600}" }
+    },
+
+    "feedback": {
+      "danger":  { "value": "{color.red.500}",   "darkValue": "{color.red.500}" },
+      "success": { "value": "{color.green.500}", "darkValue": "{color.green.500}" },
+      "warning": { "value": "{color.amber.500}", "darkValue": "{color.amber.500}" }
+    },
+
+    "focus": {
+      "ring": { "value": "{color.blue.500}", "darkValue": "{color.blue.500}" }
+    }
+  }
+}

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>Event Loop 顺序可视化</title>
+  <style>
+    body { font: 14px/1.6 system-ui; padding: 24px; max-width: 800px; }
+    button { padding: 8px 16px; margin-right: 8px; }
+    pre { background: #f4f4f4; padding: 16px; border-radius: 6px; max-height: 400px; overflow: auto; }
+    .legend { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Event Loop: macro / micro / RAF / idle 顺序</h1>
+  <p class="legend">点击按钮,看输出顺序。验证你对事件循环的理解是否准确。</p>
+  <button onclick="run()">运行</button>
+  <button onclick="out.textContent=''">清空</button>
+  <pre id="out"></pre>
+
+  <script>
+    const out = document.getElementById('out')
+    const log = (s) => out.textContent += s + '\n'
+
+    function run() {
+      out.textContent = ''
+      log('=== 同步代码开始 ===')
+
+      // 1. macrotask
+      setTimeout(() => log('setTimeout 0 (macrotask)'), 0)
+
+      // 2. microtask
+      Promise.resolve().then(() => {
+        log('Promise.then #1 (microtask)')
+        Promise.resolve().then(() => log('Promise.then #2 (microtask,在 #1 同一轮被加入)'))
+      })
+
+      queueMicrotask(() => log('queueMicrotask (microtask)'))
+
+      // 3. RAF
+      requestAnimationFrame(() => log('RAF (before next paint)'))
+
+      // 4. idle
+      requestIdleCallback?.(() => log('requestIdleCallback (idle)'))
+
+      // 5. MessageChannel(被 React 拿来当 macrotask 调度器,比 setTimeout 精确)
+      const ch = new MessageChannel()
+      ch.port1.onmessage = () => log('MessageChannel (macrotask,比 setTimeout 优先)')
+      ch.port2.postMessage(null)
+
+      log('=== 同步代码结束 ===')
+    }
+  </script>
+
+  <h2>预期输出顺序</h2>
+  <pre>
+=== 同步代码开始 ===
+=== 同步代码结束 ===
+Promise.then #1 (microtask)
+queueMicrotask (microtask)
+Promise.then #2 (microtask,在 #1 同一轮被加入)
+MessageChannel (macrotask,比 setTimeout 优先)
+setTimeout 0 (macrotask)
+RAF (before next paint)
+requestIdleCallback (idle)
+  </pre>
+
+  <h3>要点</h3>
+  <ul>
+    <li>同步代码先跑完</li>
+    <li>microtask 队列**清空到底**(包括过程中新加的)再继续</li>
+    <li>MessageChannel 通常比 setTimeout 优先(setTimeout 有最小 4ms 钳制)</li>
+    <li>RAF 在下次 paint 前(60Hz 屏约 16ms 一次)</li>
+    <li>idle 在 paint 完成后浏览器还有时间时</li>
+  </ul>
+</body>
+</html>

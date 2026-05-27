@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>IntersectionObserver: 现代懒加载</title>
+  <style>
+    body { font: 14px/1.6 system-ui; padding: 24px; max-width: 600px; }
+    .card { height: 200px; margin: 16px 0; padding: 16px; background: #eee; border-radius: 8px; }
+    .card.loaded { background: #4af; color: white; }
+    .log { position: fixed; right: 16px; top: 16px; background: rgba(0,0,0,0.8); color: white; padding: 12px; max-height: 80vh; overflow: auto; font-family: monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>IntersectionObserver — 替代 scroll listener</h1>
+  <p>滚动页面,看哪些卡片进入视口(无需注册 scroll 事件,浏览器原生节流)</p>
+
+  <div id="container"></div>
+  <div class="log" id="log"></div>
+
+  <script>
+    const log = document.getElementById('log')
+    const out = (s) => { log.innerHTML = `<div>${s}</div>` + log.innerHTML }
+
+    // 生成 30 张卡片
+    const container = document.getElementById('container')
+    for (let i = 0; i < 30; i++) {
+      const c = document.createElement('div')
+      c.className = 'card'
+      c.textContent = `Card #${i + 1}`
+      c.dataset.id = i + 1
+      container.appendChild(c)
+    }
+
+    // IntersectionObserver 替代 onscroll + getBoundingClientRect
+    // 优势:1. 浏览器原生节流  2. 自动批量  3. 不阻塞主线程
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          out(`✅ Card #${e.target.dataset.id} 进入视口 (${(e.intersectionRatio*100).toFixed(0)}%)`)
+          e.target.classList.add('loaded')
+          // 真实场景:这里加载图片 / 上报曝光埋点 / 触发动画
+          io.unobserve(e.target)   // 只处理一次,取消订阅
+        }
+      }
+    }, {
+      // root: null (= viewport)
+      rootMargin: '0px 0px 100px 0px',   // 提前 100px 触发
+      threshold: 0.1,                     // 至少 10% 可见
+    })
+
+    document.querySelectorAll('.card').forEach(c => io.observe(c))
+  </script>
+
+  <h3>对比传统方式</h3>
+  <pre><code>// ❌ 老方式
+window.addEventListener('scroll', () => {
+  cards.forEach(c => {
+    const rect = c.getBoundingClientRect()   // 每张卡片都触发 layout!
+    if (rect.top < window.innerHeight) load(c)
+  })
+})
+
+// ✅ 现代
+new IntersectionObserver(entries => { ... }).observe(card)</code></pre>
+
+  <p>真实场景:</p>
+  <ul>
+    <li>图片懒加载(`loading="lazy"` 之外的精细控制)</li>
+    <li>无限滚动(观察 sentinel 元素)</li>
+    <li>曝光埋点统计(广告 / 内容卡片)</li>
+    <li>视频自动播放/暂停(进出视口)</li>
+  </ul>
+</body>
+</html>

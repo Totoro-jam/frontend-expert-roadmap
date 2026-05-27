@@ -1,0 +1,38 @@
+{
+  "name": "@my/web",
+  "version": "1.2.3",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+
+  "dependencies": {
+    "@my/ui": "workspace:*",
+    "@my/api-client": "workspace:*",
+    "@my/utils": "workspace:^",
+    "next": "^15.0.0",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+
+  "devDependencies": {
+    "@my/eslint-config": "workspace:*",
+    "@my/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "@types/react": "catalog:",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  },
+
+  "comments": {
+    "workspace:*": "总是匹配 workspace 中最新版本",
+    "workspace:^": "匹配,发布时变成 ^x.y.z(更宽松)",
+    "workspace:~": "匹配,发布时变成 ~x.y.z(只接受 patch 更新)",
+    "catalog:": "pnpm 9+ 引入的 catalog,所有包用同一版本(避免 React 17/18 混用)"
+  }
+}

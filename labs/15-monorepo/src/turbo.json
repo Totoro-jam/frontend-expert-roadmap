@@ -1,0 +1,83 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "**/.env.*local",
+    "tsconfig.base.json"
+  ],
+  "globalEnv": [
+    "NODE_ENV",
+    "VERCEL_ENV"
+  ],
+
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**",
+        "build/**"
+      ],
+      "inputs": [
+        "src/**",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*.json"
+      ]
+    },
+
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^build"]
+    },
+
+    "lint": {
+      "cache": true,
+      "inputs": [
+        "src/**",
+        ".eslintrc.*",
+        "eslint.config.js"
+      ],
+      "outputs": []
+    },
+
+    "lint:fix": {
+      "cache": false
+    },
+
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "inputs": [
+        "src/**",
+        "test/**",
+        "vitest.config.*",
+        "jest.config.*"
+      ]
+    },
+
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "inputs": ["src/**", "tsconfig.json"]
+    },
+
+    "clean": {
+      "cache": false
+    },
+
+    "//#format": {
+      "cache": false
+    }
+  },
+
+  "remoteCache": {
+    "signature": true
+  }
+}

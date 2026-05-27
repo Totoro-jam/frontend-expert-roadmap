@@ -1,0 +1,25 @@
+# pnpm workspaces 声明文件
+
+packages:
+  # 应用层
+  - 'apps/*'
+
+  # 共享库
+  - 'packages/*'
+
+  # 工程化配置
+  - 'tooling/*'
+
+  # 排除测试 fixtures / 模板
+  - '!**/test/fixtures/**'
+  - '!**/templates/**'
+
+# ====================================================
+# .npmrc 配套配置(项目根目录)
+# ====================================================
+# strict-peer-dependencies=false
+# auto-install-peers=true
+# enable-pre-post-scripts=true
+# shamefully-hoist=false          # 严格,不向上 hoist(默认就是 false)
+# link-workspace-packages=true    # workspace: 协议自动解析
+# prefer-workspace-packages=true  # 同名包优先 workspace 版本
